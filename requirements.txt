@@ -1,0 +1,9 @@
+google-generativeai
+pillow
+pypdfium2
+python-dotenv
+fastapi
+uvicorn
+pydantic
+sentence-transformers
+faiss-cpu

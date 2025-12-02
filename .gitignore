@@ -1,0 +1,19 @@
+# 가상환경
+.venv/
+venv/
+
+# Node 모듈
+node_modules/
+
+# 캐시/임시
+__pycache__/
+*.pyc
+.DS_Store
+
+# 로컬 비밀 설정 / 토큰
+credentials.json
+.env
+token.json
+
+# (필요하면) 로컬 PDF/이미지 데이터
+data/pdf/

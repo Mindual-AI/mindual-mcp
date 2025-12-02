@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Manual Agent</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f5f6f8;
+      color: #333;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 0;
+      padding: 30px;
+    }
+    h1 {
+      color: #1f5aff;
+    }
+    #container {
+      width: 90%;
+      max-width: 600px;
+      background: white;
+      padding: 25px;
+      border-radius: 15px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    textarea {
+      width: 100%;
+      height: 100px;
+      padding: 10px;
+      font-size: 15px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      resize: none;
+    }
+    button {
+      margin-top: 12px;
+      background-color: #1f5aff;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #1744c9;
+    }
+    #response {
+      margin-top: 20px;
+      white-space: pre-wrap;
+      line-height: 1.5;
+      background: #f0f2f5;
+      padding: 15px;
+      border-radius: 10px;
+      font-size: 15px;
+    }
+  </style>
+</head>
+<body>
+  <h1>📘 Manual Agent</h1>
+  <div id="container">
+    <textarea id="query" placeholder="질문을 입력하세요. 예: 통세척 코스는 어떻게 하나요?"></textarea>
+    <button onclick="ask()">질문하기</button>
+    <div id="response"></div>
+  </div>
+
+  <script>
+    async function ask() {
+      const query = document.getElementById('query').value.trim();
+      const responseDiv = document.getElementById('response');
+      responseDiv.innerText = '⏳ 답변을 불러오는 중...';
+
+      try {
+        const res = await fetch('http://localhost:8000/api/answer', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query })
+        });
+
+        if (!res.ok) {
+          throw new Error(`서버 오류: ${res.status}`);
+        }
+
+        const data = await res.json();
+        responseDiv.innerText = data.answer || '(답변 없음)';
+      } catch (err) {
+        responseDiv.innerText = '❌ 오류: ' + err.message;
+      }
+    }
+  </script>
+</body>
+</html>
