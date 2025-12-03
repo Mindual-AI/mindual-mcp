@@ -18,3 +18,7 @@
 
 
 
+## 🎥 Demo Video 2: 텍스트 입력-텍스트 이미지 반환
+<video src="KakaoTalk_20251203_082420168.mp4" controls width="600"></video>
+
+
