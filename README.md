@@ -16,9 +16,14 @@
 ![14](https://github.com/user-attachments/assets/388f4e47-1474-4261-8dd7-ae1fb1df2789)
 
 
+## 🎥 Demo Video 1: 텍스트 입력-텍스트 반환, 구글 캘린더 연동
 
+<video src="demo1.mp4" controls width="600"></video>
 
 ## 🎥 Demo Video 2: 텍스트 입력-텍스트 이미지 반환
-<video src="KakaoTalk_20251203_082420168.mp4" controls width="600"></video>
+
+<video src="demo2.mp4" controls width="600"></video>
+
+
 
 
