@@ -17,12 +17,10 @@
 
 
 ## 🎥 Demo Video 1: 텍스트 입력-텍스트 반환, 구글 캘린더 연동
-
-<video src="demo1.mp4" controls width="600"></video>
+<video src="https://raw.githubusercontent.com/Mindual-AI/mindual-mcp/main/demo1.mp4" controls width="600"></video>
 
 ## 🎥 Demo Video 2: 텍스트 입력-텍스트 이미지 반환
-
-<video src="demo2.mp4" controls width="600"></video>
+<video src="https://raw.githubusercontent.com/Mindual-AI/mindual-mcp/main/demo2.mp4" controls width="600"></video>
 
 
 
