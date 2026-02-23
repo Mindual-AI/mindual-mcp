@@ -21,7 +21,6 @@
 
 ## 🎥 Demo Video 2: 텍스트 입력-텍스트 이미지 반환
 <video src="https://raw.githubusercontent.com/Mindual-AI/mindual-mcp/main/demo2.mp4" controls width="600"></video>
+https://github.com/user-attachments/assets/0ea6520f-e1a7-4919-82ab-94aef505eb95
 
-
-
-
+## 🎥 Demo Video 3: 
