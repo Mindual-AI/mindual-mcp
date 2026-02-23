@@ -14,26 +14,25 @@ def main():
     creds = None
 
     # 이미 저장된 token.json이 있다면 재사용
-    if os.path.exists("token.json"):
-        creds = Credentials.from_authorized_user_file("token.json", SCOPES)
+    if os.path.exists("../../token.json"):
+        creds = Credentials.from_authorized_user_file("../../token.json", SCOPES)
 
     # token.json이 없거나, 만료/유효하지 않으면 새로 인증
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:
-            # ⚠ credentials.json은 반드시 프로젝트 루트에 있어야 합니다
             flow = InstalledAppFlow.from_client_secrets_file(
                 "credentials.json", SCOPES
             )
             creds = flow.run_local_server(port=0)
 
         # 인증 결과를 token.json으로 저장
-        with open("token.json", "w", encoding="utf-8") as token:
+        with open("../../token.json", "w", encoding="utf-8") as token:
             token.write(creds.to_json())
 
-    print("🎉 Google Calendar 인증 완료!")
-    print("📌 token.json 생성됨 — 서버에서 자동 사용됩니다.")
+    print("Google Calendar 인증 완료")
+    print("token.json 생성 서버에서 자동 사용")
 
 
 if __name__ == "__main__":

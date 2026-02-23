@@ -18,7 +18,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 # 이제 scripts.query_rag 를 import 할 수 있음
-from scripts.query_rag import answer_query
+from src.agent.query_rag import answer_query
 
 # MCP Server 인스턴스 생성
 server = Server("manual-rag-server")
@@ -61,8 +61,9 @@ async def call_tool(name: str, arguments: dict[str, Any]) -> Sequence[TextConten
             if not query.strip():
                 return [TextContent(type="text", text="query 가 비어 있습니다.")]
 
-            answer = answer_query(query, k=k)  # scripts/query_rag.py 함수 호출
-            return [TextContent(type="text", text=answer)]
+            result = answer_query(query, k=k) # scripts/query_rag.py 함수 호출
+            text = result.get("answer", "")
+            return [TextContent(type="text", text=text)]
 
         # 여기에 나중에 다른 에이전트/툴 추가 가능
 

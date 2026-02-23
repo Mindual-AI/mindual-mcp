@@ -5,7 +5,7 @@ from typing import List, Optional
 from datetime import datetime
 import sqlite3
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Form, File, UploadFile
 from pydantic import BaseModel
 import google.generativeai as genai
 
@@ -21,9 +21,7 @@ from src.agent.visual_detector import VisualContentDetector
 
 router = APIRouter()
 
-
-# ---------- 유틸: 한국어 일정 문장 포맷 ----------
-
+# 한국어 일정 문장 포맷
 def _format_korean_datetime(dt: datetime, title: str) -> str:
     weekday_names = ["월", "화", "수", "목", "금", "토", "일"]
     w = weekday_names[dt.weekday()]
@@ -37,7 +35,7 @@ def _format_korean_datetime(dt: datetime, title: str) -> str:
     # 예: 일요일(30일) 오전 10시에 "에어컨 청소" 일정이 등록되었습니다.
     return f"{w}요일({day}일) {time_str}에 \"{title}\" 일정이 등록되었습니다."
 
-# ---------- Pydantic 모델 ----------
+# Pydantic 모델
 class RagRequest(BaseModel):
     query: str
     k: int = 5
@@ -68,11 +66,9 @@ class CalendarEventsResponse(BaseModel):
     events: List[CalendarEvent]
 
 
-# ---------- Gemini 세팅 (한 번만) ----------
-
+# Gemini 세팅 (최초 1번)
 genai.configure(api_key=GEMINI_API_KEY)
 _gemini_model = genai.GenerativeModel(GEMINI_MODEL_ID)
-
 
 def _call_gemini(prompt: str) -> str:
     """Gemini 호출 헬퍼: resp.text 없을 때 candidates 에서 꺼내오기."""
@@ -131,24 +127,40 @@ def _to_page_image_url(path: str | None) -> str | None:
         rel = norm  # 안전하게
 
     # 백엔드 주소에 맞게
-    return f"http://127.0.0.1:8100/manual-pages/{rel}"
+    return f"http://127.0.0.1:8001/manual-pages/{rel}"
 
 answer_agent = AnswerSynthesisAgent()
 visual_detector = VisualContentDetector()
 
-# ---------- /rag/query 엔드포인트 ----------
-
+# /rag/query 엔드포인트
 @router.post("/rag/query", response_model=RagResponse)
-def rag_query(body: RagRequest) -> RagResponse:
-    print(">>> /rag/query called!", body.dict())
+async def rag_query(
+    query: str = Form(""),
+    k: int = Form(5),
+    intent: Optional[str] = Form(None),
+    file: UploadFile | None = File(None),  # 프론트에서 보내는 imageFile (지금은 안 써도 됨)
+) -> RagResponse:
+    print(
+        ">>> /rag/query called!",
+        {"query": query, "k": k, "intent": intent, "file": file.filename if file else None},
+    )
 
-    # 0) intent 결정: body.intent가 있으면 우선, 없으면 서버에서 감지
-    intent = body.intent or detect_intent(body.query)
-    print("[INTENT]", intent, "| query:", body.query)
+    q = (query or "").strip()
 
-    # ---------- 리마인더 의도 처리 ----------
-    if intent == "reminder":
-        reminder = extract_reminder(body.query)
+    # 텍스트도 없고 파일도 없으면 에러
+    if not q and file is None:
+        raise HTTPException(
+            status_code=400,
+            detail="질문 내용이 비어 있습니다. query 필드 또는 이미지 파일을 보내주세요.",
+        )
+
+    # 0) intent 결정
+    detected_intent = intent or detect_intent(q)
+    print("[INTENT]", detected_intent, "| query:", q)
+
+    # 리마인더 의도 처리
+    if detected_intent == "reminder":
+        reminder = extract_reminder(q)
         print("[REMINDER] parsed:", repr(reminder))
 
         if not reminder:
@@ -181,11 +193,11 @@ def rag_query(body: RagRequest) -> RagResponse:
         print("[REMINDER] answer:", answer_text)
         return RagResponse(answer=answer_text, contexts=[], intent="reminder")
 
-    # rag
-    print("[RAG] start:", body.query)
+    # RAG
+    print("[RAG] start:", q)
 
     # 1) FAISS 검색
-    results = search("chunks", body.query, k=body.k)
+    results = search("chunks", q, k=k)
     print("[RAG] search done. hits:", len(results))
 
     # 2) DB에서 컨텍스트 로드
@@ -224,14 +236,13 @@ def rag_query(body: RagRequest) -> RagResponse:
     print("[RAG] context loaded:", len(contexts))
 
     if not contexts:
-        # 관련 문서가 없으면 바로 응답
         return RagResponse(
             answer="관련 문서를 찾지 못했습니다.",
             contexts=[],
             intent="rag",
         )
 
-    # 3) RAG용 텍스트 리스트 만들기
+    # 3) RAG용 텍스트 리스트
     retrieved_sentences = []
     for c in contexts:
         prefix = f"[p.{c.page}] " if c.page is not None else ""
@@ -245,7 +256,6 @@ def rag_query(body: RagRequest) -> RagResponse:
     if page_img_path:
         try:
             img = Image.open(page_img_path).convert("RGB")
-            # 시각 자료가 실제로 있는 페이지인지 확인
             if visual_detector.has_visual_content(img):
                 selected_image = img
                 print(f"[RAG][IMAGE] using page image: {page_img_path}")
@@ -254,9 +264,9 @@ def rag_query(body: RagRequest) -> RagResponse:
         except Exception as e:
             print("[RAG][IMAGE] failed to open image:", repr(e))
 
-    # 5) 최종 답변 합성 (텍스트 + 선택적 이미지)
+    # 5) 최종 답변 합성
     result = answer_agent.synthesize(
-        query=body.query,
+        query=q,
         retrieved_sentences=retrieved_sentences,
         image=selected_image,
         page=top_ctx.page or -1,
@@ -265,6 +275,12 @@ def rag_query(body: RagRequest) -> RagResponse:
     answer = result.get("answer", "응답 생성에 실패했습니다.")
     used_image = result.get("used_image", False)
     print(f"[RAG] Answer synthesis done. used_image={used_image}")
+    source_info = ", ".join(
+        [f"p.{c.page}" for c in contexts if c.page is not None]
+    )
+    if source_info:
+        answer = f"{answer}\n\n 출처: {source_info} 기반"
+
     print(">>> /rag/query finished")
 
     return RagResponse(
@@ -273,9 +289,7 @@ def rag_query(body: RagRequest) -> RagResponse:
         intent="rag",
     )
 
-
-# ---------- /calendar/events 엔드포인트 ----------
-
+# /calendar/events 엔드포인트
 @router.get("/calendar/events", response_model=CalendarEventsResponse)
 def get_calendar_events(limit: int = 10) -> CalendarEventsResponse:
     """

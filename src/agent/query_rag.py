@@ -13,7 +13,7 @@ import google.generativeai as genai
 import sqlite3
 
 
-def answer_query(query: str, k: int = 5) -> Dict[str, Any]:
+def answer_query(query: str, k: int = 3) -> Dict[str, Any]:
     """
     RAG 기반으로 답변을 생성하고,
     참고할 매뉴얼 페이지 정보(페이지 번호 + 이미지 경로)를 함께 반환한다.
@@ -45,7 +45,7 @@ def answer_query(query: str, k: int = 5) -> Dict[str, Any]:
             "pages": [],
         }
 
-    # 2. DB에서 텍스트 + 페이지 이미지 경로 조회
+    # DB에서 텍스트 + 페이지 이미지 경로 조회
     conn = sqlite3.connect(DB_PATH)
     contexts: list[str] = []
     pages: list[Dict[str, Any]] = []
@@ -72,7 +72,7 @@ def answer_query(query: str, k: int = 5) -> Dict[str, Any]:
             contexts.append(f"[p.{page}] {content}")
 
             # 프론트에 넘길 페이지/이미지 정보
-            # 이 (manual_id, page)에 해당하는 이미지가 존재할 때만 image_path / image_url을 설정한다.
+            # (manual_id, page)에 해당하는 이미지가 존재할 때만 image_path / image_url을 설정
             raw_path: str | None = None
             image_url: str | None = None
 
@@ -80,28 +80,28 @@ def answer_query(query: str, k: int = 5) -> Dict[str, Any]:
                 raw_path = page_img
                 fs_path = Path(str(raw_path))
 
-                # DB 경로가 'data/...' 로 시작하면 그대로 '/data/...' 로 매핑한다.
+                # DB 경로가 'data/...' 로 시작하면 그대로 '/data/...' 로 매핑
                 # 예: raw_path='data/processed/삼성 냉장고/page_16.jpg'
                 #     → image_url='/data/processed/삼성 냉장고/page_16.jpg'
                 raw_path_str = str(raw_path)
                 if raw_path_str.startswith("data/"):
                     image_url = f"/{raw_path_str}"
                 else:
-                    # 그 외 경로는 /static 아래에 그대로 노출한다.
+                    # 그 외 경로는 /static 아래에 그대로 노출
                     image_url = f"/static/{fs_path.as_posix()}"
 
             page_entry: Dict[str, Any] = {
                 "manual_id": manual_id,
                 "page": page,
                 "score": float(score),
-                "text": content,  # ✅ 해당 페이지의 원문 텍스트 (디버깅/출처 표시용)
+                "text": content,
             }
 
             # 실제 이미지가 있는 경우에만 관련 필드를 추가
             if raw_path:
                 page_entry["image_path"] = raw_path
             if image_url:
-                page_entry["image_url"] = image_url  # ✅ 에이전트 응답에 바로 쓸 수 있는 URL
+                page_entry["image_url"] = image_url
 
             pages.append(page_entry)
     finally:
@@ -150,8 +150,11 @@ def answer_query(query: str, k: int = 5) -> Dict[str, Any]:
             "pages": pages,
         }
 
+    source_info = ", ".join([f"p.{p['page']}" for p in pages])
+    answer_with_source = f"{text}\n\n 출처: {source_info} 기반"
+
     return {
-        "answer": text or "⚠️ Gemini 응답이 없습니다.",
+        "answer": answer_with_source,
         "intent": "rag",
         "source": "rag",
         "pages": pages,

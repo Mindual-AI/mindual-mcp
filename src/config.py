@@ -8,7 +8,8 @@ ENV_PATH = Path(__file__).resolve().parents[1] / ".env"
 load_dotenv(dotenv_path=ENV_PATH)
 
 # DB 경로
-DB_PATH = os.getenv("DB_PATH", "./manuals.sqlite")
+# DB_PATH = os.getenv("DB_PATH", "./manuals.sqlite")
+DB_PATH = os.getenv("DB_PATH", "data/manual.db")
 
 # Gemini API
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")

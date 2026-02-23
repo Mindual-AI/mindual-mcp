@@ -2,16 +2,16 @@ import { useMemo, useState, useEffect, useRef } from 'react'
 import './App.css'
 
 // 백엔드 RAG API 엔드포인트, 캘린더 엔드포인트
-const RAG_API_URL = 'http://127.0.0.1:8000/ask'
+const RAG_API_URL = 'http://127.0.0.1:8100/rag/query'
 const CAL_API_URL = 'http://localhost:8100/calendar/events'
 const BACKEND_BASE_URL = new URL(RAG_API_URL).origin
 
 function App() {
-  const [pageImages, setPageImages] = useState([]);
+  // const [pageImages, setPageImages] = useState([]);
   const [imageFile, setImageFile] = useState(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState(null);
   const fileInputRef = useRef(null);
-  // ✨ 채팅 창 스크롤 관리를 위한 Ref
+  // 채팅 창 스크롤 관리를 위한 Ref
   const chatWindowRef = useRef(null);
   
   const formatISODate = (date) => {
@@ -143,13 +143,13 @@ function App() {
     // 텍스트도 이미지도 없으면 리턴
     if ((!trimmed && !imageFile) || loading) return
 
-    // ✨ 수정: userMessage에 imagePreviewUrl (전송 이미지) 추가
+    //  userMessage에 imagePreviewUrl (전송 이미지) 추가
     const userMessage = {
       id: `user-${Date.now()}`,
       role: 'user',
       name: '나',
       content: trimmed || (imageFile ? `(이미지 전송: ${imageFile.name})` : '(이미지 전송)'),
-      imageUrl: imageFile ? imagePreviewUrl : null, // ✨ 추가: 전송할 이미지 URL 저장
+      imageUrl: imageFile ? imagePreviewUrl : null, // 전송할 이미지 URL 저장
     }
 
     setMessages((prev) => [...prev, userMessage])
@@ -181,7 +181,7 @@ function App() {
       const intent = data.intent ?? 'rag'
       const isReminder = intent === 'reminder'
 
-      // 🔍 백엔드에서 내려주는 pages 배열 사용 (PageInfo 리스트)
+      // 백엔드에서 내려주는 pages 배열 사용 (PageInfo 리스트)
       const pages = Array.isArray(data.pages) ? data.pages : []
 
       let decoratedAnswer = answerText
@@ -226,6 +226,7 @@ function App() {
 
       setMessages((prev) => [...prev, agentMessage])
 
+      // 리마인더인 경우, 캘린더 재조회
       if (isReminder) {
         await fetchEvents()
       }

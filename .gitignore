@@ -11,9 +11,9 @@ __pycache__/
 .DS_Store
 
 # 로컬 비밀 설정 / 토큰
-credentials.json
+src/agent/credentials.json
 .env
 token.json
 
-# (필요하면) 로컬 PDF/이미지 데이터
+# 로컬 PDF/이미지 데이터
 data/pdf/
